@@ -19,6 +19,8 @@
 
 /* for malloc/free since we handle our hash table memory separately from R */
 #include <stdlib.h>
+/* for hasing for pointers we need intptr_t */
+#include <stdint.h>
 
 /* match5 to fall-back to R's internal match for types we don't support */
 SEXP match5(SEXP itable, SEXP ix, int nmatch, SEXP incomp, SEXP env);
@@ -86,25 +88,31 @@ static void add_hash_int(hash_t *h, hash_index_t i) {
     h->ix[addr] = i;
 }
 
+/* to avoid aliasing rules issues use a union */
+union dint_u {
+  double d;
+  unsigned int u[2];
+};
+
 /* add the double value at index i (0-based!) to the hash */
 static void add_hash_real(hash_t *h, hash_index_t i) {
   double *src = (double*) h->src;
-  /* double is a bit tricky - we nave to nomalize 0.0, NA and NaN */
-  double val = (src[i] == 0.0) ? 0.0 : src[i];
+  union dint_u val;
   int addr;
-  const unsigned int *kptr = (const unsigned int*) (const char*) &val;
-  if (R_IsNA(val)) val = NA_REAL;
-  else if (R_IsNaN(val)) val = R_NaN;
-  addr = HASH(kptr[0] + kptr[1]);
+  /* double is a bit tricky - we nave to nomalize 0.0, NA and NaN */
+  val.d = (src[i] == 0.0) ? 0.0 : src[i];
+  if (R_IsNA(val.d)) val.d = NA_REAL;
+  else if (R_IsNaN(val.d)) val.d = R_NaN;
+  addr = HASH(val.u[0]+ val.u[1]);
 #ifdef PROFILE_HASH
   int oa = addr;
 #endif
-  while (h->ix[addr] && src[h->ix[addr] - 1] != val) {
+  while (h->ix[addr] && src[h->ix[addr] - 1] != val.d) {
     addr++;
     if (addr == h->m) addr = 0;
   }
 #ifdef PROFILE_HASH
-  if (addr != oa) printf("%g: dist=%d (addr=%d, oa=%d)\n", val, addr - oa, addr, oa);
+  if (addr != oa) printf("%g: dist=%d (addr=%d, oa=%d)\n", val.d, addr - oa, addr, oa);
 #endif
   if (!h->ix[addr])
     h->ix[addr] = i + 1;
@@ -114,17 +122,16 @@ static void add_hash_real(hash_t *h, hash_index_t i) {
 static void add_hash_ptr(hash_t *h, hash_index_t i) {
   int addr;
   void **src = (void**) h->src;
-  void *val = src[i++];
-  const unsigned int *kptr = (const unsigned int*) (const char*) &val;
-#if (defined _LP64) || (defined __LP64__)
-  addr = HASH(kptr[0] ^ kptr[1]);
+  intptr_t val = (intptr_t) src[i++];
+#if (defined _LP64) || (defined __LP64__) || (defined WIN64)
+  addr = HASH((val & 0xffffffff) ^ (val >> 32));
 #else
-  addr = HASH(kptr[0]);
+  addr = HASH(val);
 #endif
 #ifdef PROFILE_HASH
   int oa = addr;
 #endif
-  while (h->ix[addr] && src[h->ix[addr] - 1] != val) {
+  while (h->ix[addr] && (intptr_t) src[h->ix[addr] - 1] != val) {
     addr++;
     if (addr == h->m) addr = 0;
   }
@@ -154,33 +161,34 @@ static int get_hash_int(hash_t *h, int val) {
 static int get_hash_real(hash_t *h, double val) {
   double *src = (double*) h->src;
   int addr;
-  /* double is a bit tricky - we nave to nomalize 0.0, NA and NaN */
-  const unsigned int *kptr = (const unsigned int*) (const char*) &val;
+  union dint_u val_u;
+  /* double is a bit tricky - we nave to normalize 0.0, NA and NaN */
   if (val == 0.0) val = 0.0;
   if (R_IsNA(val)) val = NA_REAL;
   else if (R_IsNaN(val)) val = R_NaN;
-  addr = HASH(kptr[0] + kptr[1]);
+  val_u.d = val;
+  addr = HASH(val_u.u[0] + val_u.u[1]);
   while (h->ix[addr]) {
     if (src[h->ix[addr] - 1] == val)
       return h->ix[addr];
-    addr ++;
+    addr++;
     if (addr == h->m) addr = 0;
   }
   return NA_INTEGER;
 }
 
 /* NOTE: we are returning a 1-based index ! */
-static int get_hash_ptr(hash_t *h, void *val) {
+static int get_hash_ptr(hash_t *h, void *val_ptr) {
   void **src = (void **) h->src;
+  intptr_t val = (intptr_t) val_ptr;
   int addr;
-  const unsigned int *kptr = (const unsigned int*) (const char*) &val;
-#if (defined _LP64) || (defined __LP64__)
-  addr = HASH(kptr[0] ^ kptr[1]);
+#if (defined _LP64) || (defined __LP64__) || (defined WIN64)
+  addr = HASH((val & 0xffffffff) ^ (val >> 32));
 #else
-  addr = HASH(kptr[0]);
+  addr = HASH(val);
 #endif
   while (h->ix[addr]) {
-    if (src[h->ix[addr] - 1] == val)
+    if ((intptr_t) src[h->ix[addr] - 1] == val)
       return h->ix[addr];
     addr ++;
     if (addr == h->m) addr = 0;
