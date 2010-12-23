@@ -6,13 +6,15 @@ Fast match() replacement
 }
 \description{
 \code{fmatch} is a faster version of the built-in \code{\link{match}}()
-function. It is slightly faster that the built-in version because it
+function. It is slightly faster than the built-in version because it
 uses more specialized code, but in addition it retains the hash table
-with teh table obejct such that it can be re-used, dramatically reducing
+within the table object such that it can be re-used, dramatically reducing
 the look-up time especially for large tables.
 
 Although \code{fmatch} can be used separately, in general it is also
-safe to use:\code{match <- fmatch} since it is a drop-in replacement.
+safe to use: \code{match <- fmatch} since it is a drop-in
+replacement. Any cases not directly handled by \code{fmatch} are passed
+to \code{match} with a warning.
 }
 \usage{
 fmatch(x, table, nomatch = NA_integer_, incomparables = NULL)

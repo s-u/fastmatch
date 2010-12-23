@@ -1,2 +1,3 @@
 useDynLib(fastmatch)
 export(fmatch)
+S3method(print, match.hash)
