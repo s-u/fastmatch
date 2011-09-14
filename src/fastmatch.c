@@ -1,7 +1,7 @@
 /*
  *  fastmatch: fast implementation of match() in R using semi-permanent hash tables
  *
- *  Copyright (C) 2010  Simon Urbanek
+ *  Copyright (C) 2010, 2011  Simon Urbanek
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@
 
 /* for malloc/free since we handle our hash table memory separately from R */
 #include <stdlib.h>
-/* for hasing for pointers we need intptr_t */
+/* for hashing for pointers we need intptr_t */
 #include <stdint.h>
 
 /* match5 to fall-back to R's internal match for types we don't support */
@@ -143,10 +143,9 @@ static void add_hash_ptr(hash_t *h, hash_index_t i) {
 }
 
 /* NOTE: we are returning a 1-based index ! */
-static int get_hash_int(hash_t *h, int val) {
+static int get_hash_int(hash_t *h, int val, int nmv) {
   int *src = (int*) h->src;
   int addr;
-  if (val == NA_INTEGER) return NA_INTEGER;
   addr = HASH(val);
   while (h->ix[addr]) {
     if (src[h->ix[addr] - 1] == val)
@@ -154,11 +153,11 @@ static int get_hash_int(hash_t *h, int val) {
     addr ++;
     if (addr == h->m) addr = 0;
   }
-  return NA_INTEGER;
+  return nmv;
 }
 
 /* NOTE: we are returning a 1-based index ! */
-static int get_hash_real(hash_t *h, double val) {
+static int get_hash_real(hash_t *h, double val, int nmv) {
   double *src = (double*) h->src;
   int addr;
   union dint_u val_u;
@@ -174,11 +173,11 @@ static int get_hash_real(hash_t *h, double val) {
     addr++;
     if (addr == h->m) addr = 0;
   }
-  return NA_INTEGER;
+  return nmv;
 }
 
 /* NOTE: we are returning a 1-based index ! */
-static int get_hash_ptr(hash_t *h, void *val_ptr) {
+static int get_hash_ptr(hash_t *h, void *val_ptr, int nmv) {
   void **src = (void **) h->src;
   intptr_t val = (intptr_t) val_ptr;
   int addr;
@@ -193,7 +192,7 @@ static int get_hash_ptr(hash_t *h, void *val_ptr) {
     addr ++;
     if (addr == h->m) addr = 0;
   }
-  return NA_INTEGER;
+  return nmv;
 }
 
 
@@ -315,15 +314,15 @@ SEXP fmatch(SEXP x, SEXP y, SEXP nonmatch, SEXP incomp) {
     if (type == INTSXP) {
       int *k = INTEGER(x);
       for (i = 0; i < n; i++)
-	v[i] = get_hash_int(h, k[i]);
+	  v[i] = get_hash_int(h, k[i], nmv);
     } else if (type == REALSXP) {
       double *k = REAL(x);
       for (i = 0; i < n; i++)
-	v[i] = get_hash_real(h, k[i]);
+	  v[i] = get_hash_real(h, k[i], nmv);
     } else {
       SEXP *k = (SEXP*) DATAPTR(x);
       for (i = 0; i < n; i++)
-	v[i] = get_hash_ptr(h, k[i]);
+	  v[i] = get_hash_ptr(h, k[i], nmv);
     }
     if (np) UNPROTECT(np);
     return r;

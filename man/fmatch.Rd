@@ -113,5 +113,8 @@ system.time(fmatch(s, y))
 system.time(fmatch(s, y))
 system.time(base::match(s, y))
 identical(base::match(s, y), fmatch(s, y))
+
+# this used to fail before 0.1-2 since nomatch was ignored
+identical(base::match(4L, 1:3, nomatch=0), fmatch(4L, 1:3, nomatch=0))
 }
 \keyword{manip}

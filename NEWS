@@ -1,0 +1,13 @@
+ NEWS for fastmatch
+--------------------
+
+0.1-2	2011-09-14
+    o	bugfix: nomatch was ignored in the fastmatch implementation
+	(thanks to Enrico Schumann for reporting)
+
+0.1-1	2010-12-23
+    o	minor cleanups
+
+0.1-0	2010-12-23
+    o	initial release
+
