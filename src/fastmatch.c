@@ -195,6 +195,14 @@ static int get_hash_ptr(hash_t *h, void *val_ptr, int nmv) {
   return nmv;
 }
 
+static SEXP asCharacter(SEXP s, SEXP env)
+{
+  SEXP call, r;
+  PROTECT(call = lang2(install("as.character"), s));
+  PROTECT(r = eval(call, env));
+  UNPROTECT(2);
+  return r;
+}
 
 
 /* the only externally visible function to be called from R */
@@ -202,7 +210,7 @@ SEXP fmatch(SEXP x, SEXP y, SEXP nonmatch, SEXP incomp) {
   SEXP a;
   SEXPTYPE type;
   hash_t *h = 0;
-  int nmv = asInteger(nonmatch), n = LENGTH(x), np = 0, y_to_char = 0;
+  int nmv = asInteger(nonmatch), n = LENGTH(x), np = 0, y_to_char = 0, y_factor = 0;
 
   /* edge-cases of 0 length */
   if (n == 0) return allocVector(INTSXP, 0);
@@ -220,12 +228,20 @@ SEXP fmatch(SEXP x, SEXP y, SEXP nonmatch, SEXP incomp) {
     return match5(y, x, nmv, incomp, R_BaseEnv);
   }
 
-  /* implicitly convert factors to character */
-  if(OBJECT(x) && inherits(x, "factor")) {
-    x = PROTECT(asCharacterFactor(x));
-    np++;
+  /* implicitly convert factors/POSIXlt to character */
+  if (OBJECT(x)) {
+    if (inherits(x, "factor")) {
+      x = PROTECT(asCharacterFactor(x));
+      np++;
+    } else if (inherits(x, "POSIXlt")) {
+      x = PROTECT(asCharacter(x, R_GlobalEnv)); /* FIXME: match() uses env properly - should we switch to .External ? */
+      np++;
+    }
   }
-  y_to_char = (OBJECT(y) && inherits(y, "factor")); /* for y we may need to do that later */
+
+  /* for y we may need to do that later */
+  y_factor = OBJECT(y) && inherits(y, "factor");
+  y_to_char = y_factor || (OBJECT(y) && inherits(y, "POSIXlt"));
 
   /* coerce to common type - in the order of SEXP types */
   if(TYPEOF(x) >= STRSXP || TYPEOF(y) >= STRSXP)
@@ -279,11 +295,11 @@ SEXP fmatch(SEXP x, SEXP y, SEXP nonmatch, SEXP incomp) {
     if (TYPEOF(y) != type) {
 #if HASH_VERBOSE
       if (y_to_char)
-	Rprintf("   (need to convert table factor to strings\n");
+	Rprintf("   (need to convert table factor/POSIXlt to strings\n");
       else
 	Rprintf("   (need to coerce table to %d)\n", type);
 #endif
-      y = y_to_char ? asCharacterFactor(y) : coerceVector(y, type);
+      y = y_to_char ? (y_factor ? asCharacterFactor(y) : asCharacter(y, R_GlobalEnv)) : coerceVector(y, type);
       h->src = DATAPTR(y); /* this is ugly, but we need to adjust the source since we changed it */
       h->prot = y; /* since the coerced object is temporary, we let the hash table handle its life span */
       R_PreserveObject(y);
