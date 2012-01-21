@@ -33,7 +33,7 @@ typedef int hash_index_t;
 typedef struct hash {
   int m, k, els, type;
   void *src;
-  SEXP prot;
+  SEXP prot, parent;
   struct hash *next;
   hash_index_t ix[1];
 } hash_t;
@@ -269,12 +269,21 @@ SEXP fmatch(SEXP x, SEXP y, SEXP nonmatch, SEXP incomp) {
   a = Rf_getAttrib(y, hs);
   if (a != R_NilValue) { /* if there is a cache, try to find the matching type */
     h = (hash_t*) EXTPTR_PTR(a);
+    /* could the object be out of sync ? If so, better remove the hash and ignore it */
+    if (h->parent ! = y) {
+#if HASH_VERBOSE
+      Rprintf(" - DISCARING hash, its parent and the bearer don't match, taking no chances.\n");
+#endif
+      h = 0;
+      Rf_setAttrib(y, hs, R_NilValue);
+    }
     while (h && h->type != type) h = h->next;
   }
   /* if there is no cache or not of the needed coerced type, create one */
   if (a == R_NilValue || !h) {
     h = new_hash(DATAPTR(y), LENGTH(y));
     h->type = type;
+    h->parent = y;
 #if HASH_VERBOSE
     Rprintf(" - creating new hash for type %d\n", type);
 #endif
