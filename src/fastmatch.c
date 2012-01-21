@@ -270,9 +270,9 @@ SEXP fmatch(SEXP x, SEXP y, SEXP nonmatch, SEXP incomp) {
   if (a != R_NilValue) { /* if there is a cache, try to find the matching type */
     h = (hash_t*) EXTPTR_PTR(a);
     /* could the object be out of sync ? If so, better remove the hash and ignore it */
-    if (h->parent ! = y) {
+    if (h->parent != y) {
 #if HASH_VERBOSE
-      Rprintf(" - DISCARING hash, its parent and the bearer don't match, taking no chances.\n");
+      Rprintf(" - DISCARDING hash, its parent and the bearer don't match, taking no chances.\n");
 #endif
       h = 0;
       Rf_setAttrib(y, hs, R_NilValue);
