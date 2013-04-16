@@ -1,3 +1,3 @@
-useDynLib(fastmatch)
+useDynLib(fastmatch, C_fmatch = fmatch)
 export(fmatch, fmatch.hash)
 S3method(print, match.hash)
