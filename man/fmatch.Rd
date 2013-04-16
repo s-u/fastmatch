@@ -1,5 +1,6 @@
 \name{fmatch}
 \alias{fmatch}
+\alias{fmatch.hash}
 \alias{fastmatch}
 \title{
 Fast match() replacement
