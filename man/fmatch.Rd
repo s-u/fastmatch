@@ -15,9 +15,15 @@ Although \code{fmatch} can be used separately, in general it is also
 safe to use: \code{match <- fmatch} since it is a drop-in
 replacement. Any cases not directly handled by \code{fmatch} are passed
 to \code{match} with a warning.
+
+\code{fmatch.hash} is identical to \code{fmatch} but it returns the table
+object with the hash table attached instead of the result, so it can be
+used to create a table object in cases where direct modification is
+not possible.
 }
 \usage{
 fmatch(x, table, nomatch = NA_integer_, incomparables = NULL)
+fmatch.hash(x, table, nomatch = NA_integer_, incomparables = NULL)
 }
 \arguments{
   \item{x}{values to be matched}
@@ -36,25 +42,28 @@ fmatch(x, table, nomatch = NA_integer_, incomparables = NULL)
   and will be passed down to \code{match}.
 
   The first match against a table results in a hash table to be computed
-  from the table. This table is then attached as the `.match.hash`
+  from the table. This table is then attached as the \code{".match.hash"}
   attribute of the table so that it can be re-used on subsequent calls
   to \code{fmatch} with the same table.
 
   The hashing algorithm used is the same as the \code{match} function in
-  R, but it is re-implemented in a slight different way to improve its
+  R, but it is re-implemented in a slightly different way to improve its
   performance at the cost of supporting only a subset of types (integer,
   real and character). For any other types \code{fmatch} falls back to
   \code{match} (with a warning).
 }
 \value{
-  A vector of the same length as \code{x} - see \code{\link{match}} for
-  details.
+  \code{fmatch}: A vector of the same length as \code{x} - see
+  \code{\link{match}} for details.
+
+  \code{fmatch.hash}: \code{table}, possibly coerced to match the type
+  of \code{x}, with the hash table attached.
 }
 %\references{
 %}
-%\author{
-%%  ~~who you are~~
-%}
+\author{
+Simon Urbanek
+}
 \note{
 \code{fmatch} modifies the \code{table} by attaching an attribute to
   it. It is expected that the values will not change unless that
@@ -64,6 +73,12 @@ fmatch(x, table, nomatch = NA_integer_, incomparables = NULL)
   is modified directly (e.g. by some C code) without removing
   attributes.
 
+  In cases where the \code{table} object cannot be modified (or such
+  modification would not survive) \code{fmatch.hash} can be used to build
+  the hash table and return \code{table} object including the hash
+  table. In that case no lookup is done and \code{x} is only used to
+  determine the type into which \code{table} needs to be coerced.
+  
   Also \code{fmatch} does not convert to a common encoding so strings
   with different representation in two encodings don't match.
 }
@@ -91,7 +106,7 @@ identical(base::match(s, x), fmatch(s, x))
 # next, match a factor against the table
 # this will require both x and the factor
 # to be cast to strings
-s=factor(c("1","1","2","foo","3",NA))
+s = factor(c("1","1","2","foo","3",NA))
 # because the casting will have to allocate a string
 # cache in R, we run a dummy conversion to take
 # that out of the equation

@@ -1,6 +1,11 @@
  NEWS for fastmatch
 --------------------
 
+0.1-5	(under development)
+    o	add fmatch.hash() which will create a hash table that can
+	be used later with fmatch(). This can be used in cases where
+	attaching the hash to the table implicitly is not reliable.
+
 0.1-4	2012-01-12
     o	some R functions (such as subset assignment like x[1] <- 2)
 	can create a new object (with possibly modified content) and

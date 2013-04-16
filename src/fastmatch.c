@@ -206,11 +206,11 @@ static SEXP asCharacter(SEXP s, SEXP env)
 
 
 /* the only externally visible function to be called from R */
-SEXP fmatch(SEXP x, SEXP y, SEXP nonmatch, SEXP incomp) {
+SEXP fmatch(SEXP x, SEXP y, SEXP nonmatch, SEXP incomp, SEXP hashOnly) {
   SEXP a;
   SEXPTYPE type;
   hash_t *h = 0;
-  int nmv = asInteger(nonmatch), n = LENGTH(x), np = 0, y_to_char = 0, y_factor = 0;
+  int nmv = asInteger(nonmatch), n = LENGTH(x), np = 0, y_to_char = 0, y_factor = 0, hash_only = asInteger(hashOnly);
 
   /* edge-cases of 0 length */
   if (n == 0) return allocVector(INTSXP, 0);
@@ -330,6 +330,11 @@ SEXP fmatch(SEXP x, SEXP y, SEXP nonmatch, SEXP incomp) {
 	for(i = 0; i < n; i++)
 	  add_hash_ptr(h, i);
     }
+  }
+
+  if (hash_only) {
+      if (np) UNPROTECT(np);
+      return y;
   }
 
   { /* query the hash table */
