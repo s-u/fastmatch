@@ -8,6 +8,9 @@
 
     o	added ctapply() - a fast version of tapply()
 
+    o	added coalesce() - fast way of grouping unique values into
+	contiguous groups (in linear time).
+
     o	bugfix: fix crash when a newly unserialized hash table is
 	used (since the table hash is not stored during serialization).
 

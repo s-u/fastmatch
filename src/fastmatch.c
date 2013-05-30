@@ -70,7 +70,7 @@ static void hash_fin(SEXP ho) {
 #define HASH(X) (3141592653U * ((unsigned int)(X)) >> (32 - h->k))
 
 /* add the integer value at index i (0-based!) to the hash */
-static void add_hash_int(hash_t *h, hash_index_t i) {
+static int add_hash_int(hash_t *h, hash_index_t i) {
   int *src = (int*) h->src;
   int val = src[i++], addr;
   addr = HASH(val);
@@ -86,6 +86,7 @@ static void add_hash_int(hash_t *h, hash_index_t i) {
 #endif
   if (!h->ix[addr])
     h->ix[addr] = i;
+  return addr;
 }
 
 /* to avoid aliasing rules issues use a union */
@@ -95,7 +96,7 @@ union dint_u {
 };
 
 /* add the double value at index i (0-based!) to the hash */
-static void add_hash_real(hash_t *h, hash_index_t i) {
+static int add_hash_real(hash_t *h, hash_index_t i) {
   double *src = (double*) h->src;
   union dint_u val;
   int addr;
@@ -116,10 +117,11 @@ static void add_hash_real(hash_t *h, hash_index_t i) {
 #endif
   if (!h->ix[addr])
     h->ix[addr] = i + 1;
+  return addr;
 }
 
 /* add the pointer value at index i (0-based!) to the hash */
-static void add_hash_ptr(hash_t *h, hash_index_t i) {
+static int add_hash_ptr(hash_t *h, hash_index_t i) {
   int addr;
   void **src = (void**) h->src;
   intptr_t val = (intptr_t) src[i++];
@@ -140,6 +142,7 @@ static void add_hash_ptr(hash_t *h, hash_index_t i) {
 #endif
   if (!h->ix[addr])
     h->ix[addr] = i;
+  return addr;
 }
 
 /* NOTE: we are returning a 1-based index ! */
@@ -199,8 +202,8 @@ static SEXP asCharacter(SEXP s, SEXP env)
 {
   SEXP call, r;
   PROTECT(call = lang2(install("as.character"), s));
-  PROTECT(r = eval(call, env));
-  UNPROTECT(2);
+  r = eval(call, env);
+  UNPROTECT(1);
   return r;
 }
 
@@ -357,4 +360,74 @@ SEXP fmatch(SEXP x, SEXP y, SEXP nonmatch, SEXP incomp, SEXP hashOnly) {
     if (np) UNPROTECT(np);
     return r;
   }
+}
+
+/* FIXME: should we also attach the hash? */
+SEXP coalesce(SEXP x) {
+    SEXPTYPE type = TYPEOF(x);
+    SEXP res;
+    int i, n = LENGTH(x), dst = 0;
+    hash_t *h;
+    int *count;
+
+    res = PROTECT(allocVector(INTSXP, LENGTH(x)));
+
+    h = new_hash(DATAPTR(x), LENGTH(x));
+    h->type = type;
+    h->parent = x;
+ 
+    if (!(count = calloc(h->m, sizeof(int)))) {
+	free_hash(h);
+	Rf_error("Unable to allocate memory for counts");
+    }
+
+    /* count the size of each category - we're using negative numbers
+       since we will re-purpose the array later to hold the pointer to the
+       index of the next entry to stroe which will be positive */
+    if (type == INTSXP)
+	for(i = 0; i < n; i++)
+	    count[add_hash_int(h, i)]--;
+    else if (type == REALSXP)
+	for(i = 0; i < n; i++)
+	    count[add_hash_real(h, i)]--;
+    else
+	for(i = 0; i < n; i++)
+	    count[add_hash_ptr(h, i)]--;
+
+    if (type == INTSXP)
+	for(i = 0; i < n; i++) {
+	    int addr = add_hash_int(h, i);
+	    if (count[addr] < 0) { /* this cat has not been used yet, reserve the index space for it*/
+		int ni = -count[addr];
+		count[addr] = dst;
+		dst += ni;
+	    }
+	    INTEGER(res)[count[addr]++] = i + 1;
+	}
+    else if (type == REALSXP)
+	for(i = 0; i < n; i++) {
+	    int addr = add_hash_real(h, i);
+	    if (count[addr] < 0) {
+		int ni = -count[addr];
+		count[addr] = dst;
+		dst += ni;
+	    }
+	    INTEGER(res)[count[addr]++] = i + 1;
+	}
+    else
+	for(i = 0; i < n; i++) {
+	    int addr = add_hash_ptr(h, i);
+	    if (count[addr] < 0) {
+		int ni = -count[addr];
+		count[addr] = dst;
+		dst += ni;
+	    }
+	    INTEGER(res)[count[addr]++] = i + 1;
+	}
+    
+    free(count);
+    free_hash(h);
+
+    UNPROTECT(1);
+    return res;
 }
