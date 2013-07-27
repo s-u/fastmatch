@@ -46,7 +46,7 @@ static hash_t *new_hash(void *src, hash_index_t len) {
   hash_index_t m = 2, k = 1, desired = len * 2; /* we want a maximal load of 50% */
   while (m < desired) { m *= 2; k++; }
   h = (hash_t*) calloc(1, sizeof(hash_t) + (sizeof(hash_index_t) * m));
-  if (!h) Rf_error("unable to allocate %.2Mb for a hash table", (double) sizeof(hash_index_t) * (double) m / (1024.0 * 1024.0));
+  if (!h) Rf_error("unable to allocate %.2fMb for a hash table", (double) sizeof(hash_index_t) * (double) m / (1024.0 * 1024.0));
   h->m = m;
   h->k = k;
   h->src = src;
