@@ -7,17 +7,17 @@
 #define USE_RINTERNALS 1
 #include <Rinternals.h>
 
+#ifndef XLENGTH /* for compatibility with old R */
+#define XLENGTH(X) LENGTH(X)
+#define IS_LONG_VEC(X) 0
+typedef R_len_t R_xlen_t;
+#endif
+
 /* hash_index_t is big enough to cover long vectors */
 #ifdef LONG_VECTOR_SUPPORT
 typedef R_xlen_t hash_index_t;
 #else
 typedef int hash_index_t;
-#endif
-
-#ifndef XLENGTH /* for compatibility with old R */
-#define XLENGTH(X) LENGTH(X)
-#define IS_LONG_VEC(X) 0
-typedef R_len_t R_xlen_t;
 #endif
 
 /* hashes are always 32-bit -- this is for compatibility with

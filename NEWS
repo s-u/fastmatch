@@ -13,8 +13,8 @@
 
     o	fastmatch now supports long vectors. Note that the hash
 	function is the same as in R and thus it uses at most 32-bits,
-	hence long vectors can be used by they must have less than
-	2^32 unique values.
+	hence long vectors can be used, but they must have less than
+	2^32 (~4e9) unique values.
 
     o	bugfix: fix crash when a newly unserialized hash table is
 	used (since the table hash is not stored during serialization).
