@@ -63,6 +63,7 @@ static hash_t *new_hash(SEXPTYPE type, hash_index_t len) {
     h->m = m;
     h->k = k;
     h->src = DATAPTR(h->parent);
+    h->type = type;
     return h;
 }
 
@@ -351,8 +352,8 @@ SEXP mk_hash(SEXP x, SEXP sGetIndex, SEXP sValueEst, SEXP vals) {
     if (type != INTSXP && type != REALSXP && type != STRSXP && type != VECSXP)
 	Rf_error("Currently supported types are integer, real, chracter vectors and lists");
 
-    if (get_index) { /* FIXME: long vec support? */
-	ix = INTEGER(six = PROTECT(allocVector(INTSXP, LENGTH(x))));
+    if (get_index) {
+	ix = INTEGER(six = PROTECT(allocVector(INTSXP, XLENGTH(x))));
 	np++;
     }
 

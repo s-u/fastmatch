@@ -1,7 +1,7 @@
-mk.hash <- function(x, size=256L, index=FALSE, values=NULL) .Call(mk_hash, x, size, index, values)
+mk.hash <- function(x, size=256L, index=FALSE, values=NULL) .Call(mk_hash, x, index, size, values)
 
-hash.index <- function(hash) .Call(get_table, hash)
+levels.fasthash <- function(x) .Call(get_table, x)
 
 map.values <- function(hash, keys) .Call(get_values, hash, keys)
 
-append.hash <- function(hash, x, index=FALSE, values=NULL) .Call(C_append, hash, x, index, values)
+append.hash <- function(hash, x, index=TRUE, values=NULL) .Call(C_append, hash, x, index, values)
