@@ -17,6 +17,7 @@
 
 /* for malloc/free since we handle our hash table memory separately from R */
 #include <stdlib.h>
+#include <string.h>
 /* for hashing for pointers we need intptr_t */
 #include <stdint.h>
 
@@ -175,7 +176,7 @@ static hash_index_t get_hash_real(hash_t *h, double val, int nmv) {
     val_u.d = val;
     addr = HASH(val_u.u[0] + val_u.u[1]);
     while (h->ix[addr]) {
-	if (src[h->ix[addr] - 1] == val)
+	if (!memcmp(&src[h->ix[addr] - 1], &val, sizeof(val)))
 	    return h->ix[addr];
 	addr++;
 	if (addr == h->m) addr = 0;
