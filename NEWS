@@ -16,6 +16,9 @@
 	hence long vectors can be used, but they must have less than
 	2^32 (~4e9) unique values.
 
+    o	bugfix: matching reals against a table that contains NA or NaNs
+	would not match the position of those but return NA instead.
+
     o	bugfix: fix crash when a newly unserialized hash table is
 	used (since the table hash is not stored during serialization).
 
