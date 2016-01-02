@@ -11,6 +11,8 @@
     o	added coalesce() - fast way of grouping unique values into
 	contiguous groups (in linear time).
 
+    o	added %fin% - a fast version of %in%
+
     o	fastmatch now supports long vectors. Note that the hash
 	function is the same as in R and thus it uses at most 32-bits,
 	hence long vectors can be used, but they must have less than
