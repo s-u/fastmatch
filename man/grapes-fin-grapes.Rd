@@ -2,7 +2,7 @@
 % Please edit documentation in R/operators.R
 \name{\%fin\%}
 \alias{\%fin\%}
-\title{Fast replacment for the %in% operator}
+\title{Fast replacment for the \%in\% operator}
 \usage{
 x \%fin\% table
 }
@@ -14,6 +14,20 @@ x \%fin\% table
 \value{
 A logical vector with the same length as \code{x}. It is \code{TRUE} 
 wherever an element of \code{x} is a member of \code{table}.
-wherever an element of \code{x} is a member of \code{table}.
+}
+\description{
+Replacement for \code{\link[base]{\%in\%}}, based upon \code{\link{fmatch}}.
+}
+\examples{
+x = sample(1e7, 1e7, replace = TRUE)
+s = 1:100
+system.time(s \%in\% x)
+# A bit faster
+system.time(s \%fin\% x)
+# Subsequent call is very fast!
+system.time(s \%fin\% x)
+}
+\seealso{
+\code{\link{fmatch}} and \code{\link[base]{match}}
 }
 
