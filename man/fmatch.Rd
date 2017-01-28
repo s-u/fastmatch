@@ -1,5 +1,6 @@
 \name{fmatch}
 \alias{fmatch}
+\alias{\%fin\%}
 \alias{fmatch.hash}
 \alias{fastmatch}
 \title{
@@ -21,10 +22,14 @@ to \code{match} with a warning.
 object with the hash table attached instead of the result, so it can be
 used to create a table object in cases where direct modification is
 not possible.
+
+\code{\%fin\%} is a version of the built-in \code{\link{\%in\%}} function
+that uses \code{fmatch} instead of \code{\link{match}}().
 }
 \usage{
 fmatch(x, table, nomatch = NA_integer_, incomparables = NULL)
 fmatch.hash(x, table, nomatch = NA_integer_, incomparables = NULL)
+x \%fin\% table
 }
 \arguments{
   \item{x}{values to be matched}
@@ -59,6 +64,10 @@ fmatch.hash(x, table, nomatch = NA_integer_, incomparables = NULL)
 
   \code{fmatch.hash}: \code{table}, possibly coerced to match the type
   of \code{x}, with the hash table attached.
+
+  \code{\%fin\%}: A logical vector the same length as \code{x} - see
+  \code{\link{\%in\%}} for details.
+
 }
 %\references{
 %}
@@ -134,3 +143,4 @@ identical(base::match(s, y), fmatch(s, y))
 identical(base::match(4L, 1:3, nomatch=0), fmatch(4L, 1:3, nomatch=0))
 }
 \keyword{manip}
+\keyword{logic}
