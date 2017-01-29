@@ -1,7 +1,10 @@
  NEWS for fastmatch
 --------------------
 
-1.1-0	(under development)
+1.1-1	(under development)
+
+
+1.1-0	2017-01-28
     o	add fmatch.hash() which will create a hash table that can
 	be used later with fmatch(). This can be used in cases where
 	attaching the hash to the table implicitly is not reliable.
