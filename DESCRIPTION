@@ -1,6 +1,6 @@
 Package: fastmatch
-Version: 1.1-0
-Title: Fast match() function
+Version: 1.1-1
+Title: Fast 'match()' Function
 Author: Simon Urbanek <simon.urbanek@r-project.org>
 Maintainer: Simon Urbanek <simon.urbanek@r-project.org>
 Description: Package providing a fast match() replacement for cases
