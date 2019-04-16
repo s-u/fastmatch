@@ -265,6 +265,7 @@ SEXP fmatch(SEXP x, SEXP y, SEXP nonmatch, SEXP incomp, SEXP hashOnly) {
     /* we only support INT/REAL/STR */
     if (type != INTSXP && type != REALSXP && type != STRSXP) {
 	Rf_warning("incompatible type, fastmatch() is falling back to match()");
+	if (np) UNPROTECT(np);
 	return match5(y, x, nmv, NULL, R_BaseEnv);
     }
 
