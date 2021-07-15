@@ -323,9 +323,9 @@ SEXP fmatch(SEXP x, SEXP y, SEXP nonmatch, SEXP incomp, SEXP hashOnly) {
 		Rprintf("   (need to coerce table to %d)\n", type);
 #endif
 	    y = y_to_char ? (y_factor ? asCharacterFactor(y) : asCharacter(y, R_GlobalEnv)) : coerceVector(y, type);
+	    R_PreserveObject(y);
 	    h->src = DATAPTR(y); /* this is ugly, but we need to adjust the source since we changed it */
 	    h->prot = y; /* since the coerced object is temporary, we let the hash table handle its life span */
-	    R_PreserveObject(y);
 	}
 	/* make sure y doesn't go away while we create the hash */
 	/* R_PreserveObject(y);     */
