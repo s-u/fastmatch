@@ -7,7 +7,7 @@
 #define USE_RINTERNALS 1
 #include <Rinternals.h>
 
-#ifndef XLENGTH /* for compatibility with old R */
+#ifndef R_SHORT_LEN_MAX /* for compatibility with old R */
 #define XLENGTH(X) LENGTH(X)
 #define IS_LONG_VEC(X) 0
 typedef R_len_t R_xlen_t;
