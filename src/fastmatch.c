@@ -222,11 +222,11 @@ SEXP fmatch(SEXP x, SEXP y, SEXP nonmatch, SEXP incomp, SEXP hashOnly) {
     SEXPTYPE type;
     hash_t *h = 0;
     int nmv = asInteger(nonmatch), np = 0, y_to_char = 0, y_factor = 0, hash_only = asInteger(hashOnly);
-    hash_index_t n = XLENGTH(x);
+    hash_index_t n = (x == R_NilValue) ? 0 : XLENGTH(x);
 
     /* edge-cases of 0 length */
     if (n == 0) return allocVector(INTSXP, 0);
-    if (XLENGTH(y) == 0) { /* empty table -> vector full of nmv */
+    if (y == R_NilValue || XLENGTH(y) == 0) { /* empty table -> vector full of nmv */
 	int *ai;
 	hash_index_t ii;
 	a = allocVector(INTSXP, n);
@@ -293,6 +293,11 @@ SEXP fmatch(SEXP x, SEXP y, SEXP nonmatch, SEXP incomp, SEXP hashOnly) {
 	}
 	while (h && h->type != type) h = h->next;
     }
+#ifdef CHECKHASH
+    hash_t *orig_h = h;
+    h = 0; /* pretend that there is no hash */
+    a = R_NilValue;
+#endif
     /* if there is no cache or not of the needed coerced type, create one */
     if (a == R_NilValue || !h) {
 	h = new_hash(DATAPTR(y), XLENGTH(y));
@@ -344,6 +349,27 @@ SEXP fmatch(SEXP x, SEXP y, SEXP nonmatch, SEXP incomp, SEXP hashOnly) {
 		for(i = 0; i < n; i++)
 		    add_hash_ptr(h, i);
 	}
+#ifdef CHECKHASH
+	if (orig_h) {
+	    if (orig_h->type != type) /* this should never happen since we check the type */
+		Rf_error("Hash type mistmatch on object %p (has %d, expected %d)", y, type, orig_h->type);
+	    if (orig_h->m != h->m)
+		Rf_error("Object %p modified, cached hash table has size %ld, but re-hashing has %ld", y, (long)orig_h->m, (long)h->m);
+	    if (memcmp(orig_h->ix, h->ix, sizeof(hash_index_t) * h->m)) {
+		hash_index_t i = 0, n = h->m, No = 0, Nn = 0;
+		while (i < n) {
+		    if (orig_h->ix[i])
+			No++;
+		    if (h->ix[i])
+			Nn++;
+		    i++;
+		}
+		if (No != Nn)
+		    Rf_error("Object %p resized (from %ld to %ld) after the hash table has been created", y, (long)No, (long)Nn);
+		Rf_error("Object %p modified after the hash table has been created (size %ld remained constant)", y, (long)No);
+	    }
+	}
+#endif
     }
 
     if (hash_only) {
