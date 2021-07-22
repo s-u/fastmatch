@@ -1,6 +1,10 @@
  NEWS for fastmatch
 --------------------
 
+1.1-2	2021-07-22
+    o	minor change for compatibility with R-devel
+
+
 1.1-1	2019-04-16
     o	fix protection bug in case when fmatch() falls back to
 	R's match() because of unsupported types (thanks to
