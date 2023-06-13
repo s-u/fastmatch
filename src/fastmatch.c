@@ -21,8 +21,18 @@
 /* for hashing for pointers we need intptr_t */
 #include <stdint.h>
 
+static SEXP match_symbol;
+
 /* match5 to fall-back to R's internal match for types we don't support */
-SEXP match5(SEXP itable, SEXP ix, int nmatch, SEXP incomp, SEXP env);
+static SEXP match5__(SEXP itable, SEXP ix, SEXP nmatch, SEXP incomp, SEXP env) {
+    /* R doesn't like us using it directly so go via eval */
+    if (!match_symbol)
+	match_symbol = Rf_install("match");
+    SEXP lc = PROTECT(Rf_lang5(match_symbol, ix, itable, nmatch, incomp));
+    SEXP res = eval(lc, env);
+    UNPROTECT(1);
+    return res;
+}
 
 /* ".match.hash" symbol - cached on first use */
 SEXP hs;
@@ -218,7 +228,7 @@ static double NA_int2real(hash_index_t res) {
 
 /* the only externally visible function to be called from R */
 SEXP fmatch(SEXP x, SEXP y, SEXP nonmatch, SEXP incomp, SEXP hashOnly) {
-    SEXP a;
+    SEXP a, x_orig = x;
     SEXPTYPE type;
     hash_t *h = 0;
     int nmv = asInteger(nonmatch), np = 0, y_to_char = 0, y_factor = 0, hash_only = asInteger(hashOnly);
@@ -238,10 +248,10 @@ SEXP fmatch(SEXP x, SEXP y, SEXP nonmatch, SEXP incomp, SEXP hashOnly) {
     /* if incomparables are used we fall back straight to match() */
     if (incomp != R_NilValue && !(isLogical(incomp) && LENGTH(incomp) == 1 && LOGICAL(incomp)[0] == 0)) {
 	Rf_warning("incomparables used in fmatch(), falling back to match()");
-	return match5(y, x, nmv, incomp, R_BaseEnv);
+	return match5__(y, x, nonmatch, incomp, R_BaseEnv);
     }
 
-  /* implicitly convert factors/POSIXlt to character */
+    /* implicitly convert factors/POSIXlt to character */
     if (OBJECT(x)) {
 	if (inherits(x, "factor")) {
 	    x = PROTECT(asCharacterFactor(x));
@@ -266,7 +276,7 @@ SEXP fmatch(SEXP x, SEXP y, SEXP nonmatch, SEXP incomp, SEXP hashOnly) {
     if (type != INTSXP && type != REALSXP && type != STRSXP) {
 	Rf_warning("incompatible type, fastmatch() is falling back to match()");
 	if (np) UNPROTECT(np);
-	return match5(y, x, nmv, NULL, R_BaseEnv);
+	return match5__(y, x_orig, nonmatch, incomp, R_BaseEnv);
     }
 
     if (y_to_char && type != STRSXP) /* y = factor -> character -> type must be STRSXP */
