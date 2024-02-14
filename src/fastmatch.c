@@ -107,11 +107,11 @@ union dint_u {
     unsigned int u[2];
 };
 
-/* double is a bit tricky - we nave to nomalize 0.0, NA and NaN */
+/* double is a bit tricky - we nave to nomralize 0.0, NA and NaN */
 static double norm_double(double val) {
     if (val == 0.0) return 0.0;
     if (R_IsNA(val)) return NA_REAL;
-    if (R_IsNaN(val)) val = R_NaN;
+    if (R_IsNaN(val)) return R_NaN;
     return val;
 }
 
@@ -120,7 +120,6 @@ static hash_value_t add_hash_real(hash_t *h, hash_index_t i) {
     double *src = (double*) h->src;
     union dint_u val;
     hash_value_t addr;
-    /* double is a bit tricky - we nave to nomalize 0.0, NA and NaN */
     val.d = norm_double(src[i]);
     addr = HASH(val.u[0] + val.u[1]);
 #ifdef PROFILE_HASH
