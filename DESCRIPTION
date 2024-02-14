@@ -1,5 +1,5 @@
 Package: fastmatch
-Version: 1.1-4
+Version: 1.1-5
 Title: Fast 'match()' Function
 Author: Simon Urbanek <simon.urbanek@r-project.org>
 Maintainer: Simon Urbanek <simon.urbanek@r-project.org>
