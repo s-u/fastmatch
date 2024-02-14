@@ -107,16 +107,22 @@ union dint_u {
     unsigned int u[2];
 };
 
+/* double is a bit tricky - we nave to nomalize 0.0, NA and NaN */
+static double norm_double(double val) {
+    if (val == 0.0) return 0.0;
+    if (R_IsNA(val)) return NA_REAL;
+    if (R_IsNaN(val)) val = R_NaN;
+    return val;
+}
+
 /* add the double value at index i (0-based!) to the hash */
 static hash_value_t add_hash_real(hash_t *h, hash_index_t i) {
     double *src = (double*) h->src;
     union dint_u val;
     hash_value_t addr;
     /* double is a bit tricky - we nave to nomalize 0.0, NA and NaN */
-    val.d = (src[i] == 0.0) ? 0.0 : src[i];
-    if (R_IsNA(val.d)) val.d = NA_REAL;
-    else if (R_IsNaN(val.d)) val.d = R_NaN;
-    addr = HASH(val.u[0]+ val.u[1]);
+    val.d = norm_double(src[i]);
+    addr = HASH(val.u[0] + val.u[1]);
 #ifdef PROFILE_HASH
     hash_value_t oa = addr;
 #endif
@@ -179,14 +185,11 @@ static hash_index_t get_hash_real(hash_t *h, double val, int nmv) {
     double *src = (double*) h->src;
     hash_value_t addr;
     union dint_u val_u;
-    /* double is a bit tricky - we nave to normalize 0.0, NA and NaN */
-    if (val == 0.0) val = 0.0;
-    if (R_IsNA(val)) val = NA_REAL;
-    else if (R_IsNaN(val)) val = R_NaN;
-    val_u.d = val;
+    val_u.d = norm_double(val);
     addr = HASH(val_u.u[0] + val_u.u[1]);
     while (h->ix[addr]) {
-	if (!memcmp(&src[h->ix[addr] - 1], &val, sizeof(val)))
+	double nv = norm_double(src[h->ix[addr] - 1]);
+	if (!memcmp(&nv, &val_u.d, sizeof(nv)))
 	    return h->ix[addr];
 	addr++;
 	if (addr == h->m) addr = 0;
