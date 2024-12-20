@@ -8,6 +8,9 @@
     o	PROTECT fix when falling back to R's match
 	and coercion happened before.
 
+    o	bugfix: fast.hash returned the result instead of
+	the `table` argument. (#9)
+
 
 1.1-5	2024-02-14
     o	bug fix: -0 in table= would never be matched,
