@@ -241,12 +241,16 @@ SEXP fmatch(SEXP x, SEXP y, SEXP nonmatch, SEXP incomp, SEXP hashOnly) {
     /* edge-cases of 0 length */
     if (n == 0) return allocVector(INTSXP, 0);
     if (y == R_NilValue || XLENGTH(y) == 0) { /* empty table -> vector full of nmv */
-	int *ai;
-	hash_index_t ii;
-	a = allocVector(INTSXP, n);
-	ai = INTEGER(a);
-	for (ii = 0; ii < n; ii++) ai[ii] = nmv;
-	return a;
+	if (hash_only) {
+	    return y; /* no hash table created, just pass-through y */
+	} else {
+	    int *ai;
+	    hash_index_t ii;
+	    a = allocVector(INTSXP, n);
+	    ai = INTEGER(a);
+	    for (ii = 0; ii < n; ii++) ai[ii] = nmv;
+	    return a;
+	}
     }
 
     /* if incomparables are used we fall back straight to match() */
