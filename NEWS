@@ -1,7 +1,15 @@
  NEWS for fastmatch
 --------------------
 
-1.1-5
+1.1-6
+    o	use C99 version of flexible arrays to avoid
+	false-positives in strict array sanitizers.
+
+    o	PROTECT fix when falling back to R's match
+	and coercion happened before.
+
+
+1.1-5	2024-02-14
     o	bug fix: -0 in table= would never be matched,
 	because it was (correctly) hashed as 0, but final
 	comparison was 0 to -0 in the table. (#12)
