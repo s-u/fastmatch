@@ -45,7 +45,7 @@ typedef struct hash {
     SEXP prot;           /* object to protect along whith this hash */
     SEXP parent;         /* hashed object */
     struct hash *next;   /* next hash table - typically for another type */
-    hash_index_t ix[1];  /* actual table of indices */
+    hash_index_t ix[];   /* actual table of indices */
 } hash_t;
 
 /* create a new hash table with the given source and length.
@@ -78,6 +78,8 @@ static void hash_fin(SEXP ho) {
 }
 
 /* pi-hash fn */
+/* NB: the value is shifted by k to guarantee that it will not exceed
+   the hash table size (in hex the value is 0xBB40E64D) */
 #define HASH(X) (3141592653U * ((unsigned int)(X)) >> (32 - h->k))
 
 /* add the integer value at index i (0-based!) to the hash */
@@ -107,7 +109,7 @@ union dint_u {
     unsigned int u[2];
 };
 
-/* double is a bit tricky - we nave to nomralize 0.0, NA and NaN */
+/* double is a bit tricky - we nave to normalize 0.0, NA and NaN */
 static double norm_double(double val) {
     if (val == 0.0) return 0.0;
     if (R_IsNA(val)) return NA_REAL;
