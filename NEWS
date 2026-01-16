@@ -1,7 +1,11 @@
  NEWS for fastmatch
 --------------------
 
-1.1-6
+1.1-7
+    o	adjust to API changes up to R 4.6.0
+
+
+1.1-6	2024-12-20
     o	use C99 version of flexible arrays to avoid
 	false-positives in strict array sanitizers.
 
