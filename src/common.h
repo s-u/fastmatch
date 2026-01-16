@@ -26,4 +26,6 @@ typedef int hash_index_t;
    more than 2^32 - 1 unique values */
 typedef unsigned int hash_value_t;
 
+#include "rcompat.h"
+
 #endif

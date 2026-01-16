@@ -41,7 +41,7 @@ typedef struct hash {
     hash_index_t m, els; /* hash size, added elements (unused!) */
     int k;               /* used bits */
     SEXPTYPE type;       /* payload type */
-    void *src;           /* the data array of the hashed object */
+    const void *src;     /* the data array of the hashed object */
     SEXP prot;           /* object to protect along whith this hash */
     SEXP parent;         /* hashed object */
     struct hash *next;   /* next hash table - typically for another type */
@@ -51,7 +51,7 @@ typedef struct hash {
 /* create a new hash table with the given source and length.
    we store only the index - values are picked from the source 
    so you must make sure the source is still alive when used */
-static hash_t *new_hash(void *src, hash_index_t len) {
+static hash_t *new_hash(const void *src, hash_index_t len) {
   hash_t *h;
   int k = 1;
   hash_index_t m = 2, desired = len * 2; /* we want a maximal load of 50% */
@@ -84,7 +84,7 @@ static void hash_fin(SEXP ho) {
 
 /* add the integer value at index i (0-based!) to the hash */
 static hash_value_t add_hash_int(hash_t *h, hash_index_t i) {
-    int *src = (int*) h->src;
+    const int *src = (const int*) h->src;
     int val = src[i++];
     hash_value_t addr = HASH(val);
 #ifdef PROFILE_HASH
@@ -119,7 +119,7 @@ static double norm_double(double val) {
 
 /* add the double value at index i (0-based!) to the hash */
 static hash_value_t add_hash_real(hash_t *h, hash_index_t i) {
-    double *src = (double*) h->src;
+    const double *src = (const double*) h->src;
     union dint_u val;
     hash_value_t addr;
     val.d = norm_double(src[i]);
@@ -144,7 +144,7 @@ static hash_value_t add_hash_real(hash_t *h, hash_index_t i) {
 /* add the pointer value at index i (0-based!) to the hash */
 static int add_hash_ptr(hash_t *h, hash_index_t i) {
     hash_value_t addr;
-    void **src = (void**) h->src;
+    const void **src = (const void**) h->src;
     intptr_t val = (intptr_t) src[i++];
 #if (defined _LP64) || (defined __LP64__) || (defined WIN64)
     addr = HASH((val & 0xffffffff) ^ (val >> 32));
@@ -170,7 +170,7 @@ static int add_hash_ptr(hash_t *h, hash_index_t i) {
 
 /* NOTE: we are returning a 1-based index ! */
 static hash_index_t get_hash_int(hash_t *h, int val, int nmv) {
-    int *src = (int*) h->src;
+    const int *src = (const int*) h->src;
     hash_value_t addr = HASH(val);
     while (h->ix[addr]) {
 	if (src[h->ix[addr] - 1] == val)
@@ -183,7 +183,7 @@ static hash_index_t get_hash_int(hash_t *h, int val, int nmv) {
 
 /* NOTE: we are returning a 1-based index ! */
 static hash_index_t get_hash_real(hash_t *h, double val, int nmv) {
-    double *src = (double*) h->src;
+    const double *src = (const double*) h->src;
     hash_value_t addr;
     union dint_u val_u;
     val_u.d = norm_double(val);
@@ -200,7 +200,7 @@ static hash_index_t get_hash_real(hash_t *h, double val, int nmv) {
 
 /* NOTE: we are returning a 1-based index ! */
 static hash_index_t get_hash_ptr(hash_t *h, void *val_ptr, int nmv) {
-    void **src = (void **) h->src;
+    const void **src = (const void **) h->src;
     intptr_t val = (intptr_t) val_ptr;
     hash_value_t addr;
 #if (defined _LP64) || (defined __LP64__) || (defined WIN64)
@@ -260,19 +260,17 @@ SEXP fmatch(SEXP x, SEXP y, SEXP nonmatch, SEXP incomp, SEXP hashOnly) {
     }
 
     /* implicitly convert factors/POSIXlt to character */
-    if (OBJECT(x)) {
-	if (inherits(x, "factor")) {
-	    x = PROTECT(asCharacterFactor(x));
-	    np++;
-	} else if (inherits(x, "POSIXlt")) {
-	    x = PROTECT(asCharacter(x, R_GlobalEnv)); /* FIXME: match() uses env properly - should we switch to .External ? */
-	    np++;
-	}
+    if (inherits(x, "factor")) {
+	x = PROTECT(asCharacterFactor(x));
+	np++;
+    } else if (inherits(x, "POSIXlt")) {
+	x = PROTECT(asCharacter(x, R_GlobalEnv)); /* FIXME: match() uses env properly - should we switch to .External ? */
+	np++;
     }
 
     /* for y we may need to do that later */
-    y_factor = OBJECT(y) && inherits(y, "factor");
-    y_to_char = y_factor || (OBJECT(y) && inherits(y, "POSIXlt"));
+    y_factor = inherits(y, "factor");
+    y_to_char = y_factor && inherits(y, "POSIXlt");
     
     /* coerce to common type - in the order of SEXP types */
     if(TYPEOF(x) >= STRSXP || TYPEOF(y) >= STRSXP)
@@ -319,7 +317,7 @@ SEXP fmatch(SEXP x, SEXP y, SEXP nonmatch, SEXP incomp, SEXP hashOnly) {
 #endif
     /* if there is no cache or not of the needed coerced type, create one */
     if (a == R_NilValue || !h) {
-	h = new_hash(DATAPTR(y), XLENGTH(y));
+	h = new_hash(DATAPTR_RO(y), XLENGTH(y));
 	h->type = type;
 	h->parent = y;
 #if HASH_VERBOSE
@@ -348,7 +346,7 @@ SEXP fmatch(SEXP x, SEXP y, SEXP nonmatch, SEXP incomp, SEXP hashOnly) {
 #endif
 	    y = y_to_char ? (y_factor ? asCharacterFactor(y) : asCharacter(y, R_GlobalEnv)) : coerceVector(y, type);
 	    R_PreserveObject(y);
-	    h->src = DATAPTR(y); /* this is ugly, but we need to adjust the source since we changed it */
+	    h->src = DATAPTR_RO(y); /* this is ugly, but we need to adjust the source since we changed it */
 	    h->prot = y; /* since the coerced object is temporary, we let the hash table handle its life span */
 	}
 	/* make sure y doesn't go away while we create the hash */
@@ -416,7 +414,7 @@ SEXP fmatch(SEXP x, SEXP y, SEXP nonmatch, SEXP incomp, SEXP hashOnly) {
 		    for (i = 0; i < n; i++)
 			v[i] = NA_int2real(get_hash_real(h, k[i], NA_INTEGER));
 		} else {
-		    SEXP *k = (SEXP*) DATAPTR(x);
+		    SEXP *k = (SEXP*) DATAPTR_RO(x);
 		    for (i = 0; i < n; i++)
 			v[i] = NA_int2real(get_hash_ptr(h, k[i], NA_INTEGER));
 		}
@@ -430,7 +428,7 @@ SEXP fmatch(SEXP x, SEXP y, SEXP nonmatch, SEXP incomp, SEXP hashOnly) {
 		    for (i = 0; i < n; i++)
 			v[i] = (double) get_hash_real(h, k[i], nmv);
 		} else {
-		    SEXP *k = (SEXP*) DATAPTR(x);
+		    SEXP *k = (SEXP*) DATAPTR_RO(x);
 		    for (i = 0; i < n; i++)
 			v[i] = (double) get_hash_ptr(h, k[i], nmv);
 		}
@@ -450,7 +448,7 @@ SEXP fmatch(SEXP x, SEXP y, SEXP nonmatch, SEXP incomp, SEXP hashOnly) {
 		for (i = 0; i < n; i++)
 		    v[i] = get_hash_real(h, k[i], nmv);
 	    } else {
-		SEXP *k = (SEXP*) DATAPTR(x);
+		SEXP *k = (SEXP*) DATAPTR_RO(x);
 		for (i = 0; i < n; i++)
 		    v[i] = get_hash_ptr(h, k[i], nmv);
 	    }
@@ -470,7 +468,7 @@ SEXP coalesce(SEXP x) {
 
     res = PROTECT(allocVector(INTSXP, XLENGTH(x)));
 
-    h = new_hash(DATAPTR(x), XLENGTH(x));
+    h = new_hash(DATAPTR_RO(x), XLENGTH(x));
     h->type = type;
     h->parent = x;
  

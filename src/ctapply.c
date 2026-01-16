@@ -4,6 +4,8 @@
 #define USE_RINTERNALS 1
 #include <Rinternals.h>
 
+#include "rcompat.h"
+
 #define MIN_CACHE 128
 
 SEXP ctapply_(SEXP args) {
@@ -38,24 +40,26 @@ SEXP ctapply_(SEXP args) {
 	N = i - i0;
 	/* allocate cache for both the vector and index */
 	if (!cdi) {
-	    /* we have to guarantee named > 0 since we'll be modifying it in-place */
-	    SET_NAMED(cdi = SET_VECTOR_ELT(tmp, 0, allocVector(TYPEOF(by), (cdlen = ((N < MIN_CACHE) ? MIN_CACHE : N)))), 1);
-	    SET_NAMED(cdv = SET_VECTOR_ELT(tmp, 1, allocVector(TYPEOF(vec), cdlen)), 1);
+	    /* NB: SET_VECTOR_ELT guarantees NAMED=1 so no need to tweak it */
+	    cdi = SET_VECTOR_ELT(tmp, 0, R_allocResizableVector(TYPEOF(by), (cdlen = ((N < MIN_CACHE) ? MIN_CACHE : N))));
+	    cdv = SET_VECTOR_ELT(tmp, 1, R_allocResizableVector(TYPEOF(vec), cdlen));
 	} else if (cdlen < N) {
-	    SET_NAMED(cdi = SET_VECTOR_ELT(tmp, 0, allocVector(TYPEOF(by), (cdlen = N))), 1);
-	    SET_NAMED(cdv = SET_VECTOR_ELT(tmp, 1, allocVector(TYPEOF(vec), cdlen)), 1);
+	    cdi = SET_VECTOR_ELT(tmp, 0, R_allocResizableVector(TYPEOF(by), (cdlen = N)));
+	    cdv = SET_VECTOR_ELT(tmp, 1, R_allocResizableVector(TYPEOF(vec), cdlen));
 	}
-	SETLENGTH(cdi, N);
-	SETLENGTH(cdv, N);
+	if (N != cdlen) {
+	    R_resizeVector(cdi, N);
+	    R_resizeVector(cdv, N);
+	}
 	/* copy the index slice */
 	if (TYPEOF(by) == INTSXP) memcpy(INTEGER(cdi), INTEGER(by) + i0, sizeof(int) * N);
 	else if (TYPEOF(by) == REALSXP) memcpy(REAL(cdi), REAL(by) + i0, sizeof(double) * N);
-	else if (TYPEOF(by) == STRSXP) memcpy(STRING_PTR(cdi), STRING_PTR(by) + i0, sizeof(SEXP) * N);
+	else if (TYPEOF(by) == STRSXP) memcpy(STRING_PTR_RW(cdi), STRING_PTR_RO(by) + i0, sizeof(SEXP) * N);
 	/* copy the vector slice */
 	if (TYPEOF(vec) == INTSXP) memcpy(INTEGER(cdv), INTEGER(vec) + i0, sizeof(int) * N);
 	else if (TYPEOF(vec) == REALSXP) memcpy(REAL(cdv), REAL(vec) + i0, sizeof(double) * N);
-	else if (TYPEOF(vec) == STRSXP) memcpy(STRING_PTR(cdv), STRING_PTR(vec) + i0, sizeof(SEXP) * N);
-	else if (TYPEOF(vec) == VECSXP) memcpy(VECTOR_PTR(cdv), VECTOR_PTR(vec) + i0, sizeof(SEXP) * N);
+	else if (TYPEOF(vec) == STRSXP) memcpy(STRING_PTR_RW(cdv), STRING_PTR_RO(vec) + i0, sizeof(SEXP) * N);
+	else if (TYPEOF(vec) == VECSXP) memcpy(VECTOR_PTR_RW(cdv), VECTOR_PTR_RO(vec) + i0, sizeof(SEXP) * N);
 	eres = eval(PROTECT(LCONS(fun, CONS(cdv, args))), rho);
 	UNPROTECT(1); /* eval arg */
 	/* if the result has NAMED > 1 then we have to duplicate it

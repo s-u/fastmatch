@@ -62,7 +62,7 @@ static hash_t *new_hash(SEXPTYPE type, hash_index_t len) {
     R_PreserveObject(h->parent);
     h->m = m;
     h->k = k;
-    h->src = DATAPTR(h->parent);
+    h->src = DATAPTR_RW(h->parent);
     h->type = type;
     return h;
 }
@@ -265,7 +265,7 @@ static void append_hash(hash_t *h, SEXP x, int *ix, SEXP vals) {
 	    for(i = 0; i < n; i++)
 		add_hash_real(h, dv[i]);
     } else {
-	SEXP *sv = (SEXP*) DATAPTR(x);
+	SEXP *sv = (SEXP*) DATAPTR_RO(x);
 	if (vals)
 	    for(i = 0; i < n; i++)
 		SET_VECTOR_ELT(h->vals, h->ix[add_hash_obj(h, sv[i])] - 1, VECTOR_ELT(vals, i));
@@ -337,15 +337,15 @@ SEXP mk_hash(SEXP x, SEXP sGetIndex, SEXP sValueEst, SEXP vals) {
     vals = chk_vals(vals, x);
 
     /* implicitly convert factors/POSIXlt to character */
-    if (OBJECT(x)) {
-	if (inherits(x, "factor")) {
-	    x = PROTECT(asCharacterFactor(x));
-	    np++;
-	} else if (inherits(x, "POSIXlt")) {
-	    x = PROTECT(asCharacter(x, R_GlobalEnv)); /* FIXME: match() uses env properly - should we switch to .External ? */
-	    np++;
-	}
+
+    if (inherits(x, "factor")) {
+	x = PROTECT(asCharacterFactor(x));
+	np++;
+    } else if (inherits(x, "POSIXlt")) {
+	x = PROTECT(asCharacter(x, R_GlobalEnv)); /* FIXME: match() uses env properly - should we switch to .External ? */
+	np++;
     }
+
     type = TYPEOF(x);
 
     /* we only support INT/REAL/STR */
@@ -391,14 +391,12 @@ SEXP append(SEXP ht, SEXP x, SEXP sGetIndex, SEXP vals) {
     vals = chk_vals(vals, x);
 
     /* implicitly convert factors/POSIXlt to character */
-    if (OBJECT(x)) {
-	if (inherits(x, "factor")) {
-	    x = PROTECT(asCharacterFactor(x));
-	    np++;
-	} else if (inherits(x, "POSIXlt")) {
-	    x = PROTECT(asCharacter(x, R_GlobalEnv)); /* FIXME: match() uses env properly - should we switch to .External ? */
-	    np++;
-	}
+    if (inherits(x, "factor")) {
+	x = PROTECT(asCharacterFactor(x));
+	np++;
+    } else if (inherits(x, "POSIXlt")) {
+	x = PROTECT(asCharacter(x, R_GlobalEnv)); /* FIXME: match() uses env properly - should we switch to .External ? */
+	np++;
     }
     type = TYPEOF(x);
 
@@ -426,7 +424,7 @@ SEXP get_table(SEXP ht) {
     if (h->type == REALSXP) sz = sizeof(double);
     else if (h->type != INTSXP) sz = sizeof(SEXP);
     sz *= n;
-    memcpy(DATAPTR(res), DATAPTR(h->parent), sz);
+    memcpy(DATAPTR_RW(res), DATAPTR_RO(h->parent), sz);
     return res;
 }
 
@@ -442,14 +440,12 @@ SEXP get_values(SEXP ht, SEXP x) {
 	Rf_error("This is not a key/value hash table");
     
     /* implicitly convert factors/POSIXlt to character */
-    if (OBJECT(x)) {
-	if (inherits(x, "factor")) {
-	    x = PROTECT(asCharacterFactor(x));
-	    np++;
-	} else if (inherits(x, "POSIXlt")) {
-	    x = PROTECT(asCharacter(x, R_GlobalEnv)); /* FIXME: match() uses env properly - should we switch to .External ? */
-	    np++;
-	}
+    if (inherits(x, "factor")) {
+	x = PROTECT(asCharacterFactor(x));
+	np++;
+    } else if (inherits(x, "POSIXlt")) {
+	x = PROTECT(asCharacter(x, R_GlobalEnv)); /* FIXME: match() uses env properly - should we switch to .External ? */
+	np++;
     }
     type = TYPEOF(x);
 
@@ -471,7 +467,7 @@ SEXP get_values(SEXP ht, SEXP x) {
 	    for (i = 0; i < n; i++)
 		setval(res, i, get_hash_real(h, rv[i]), h->vals);
 	} else {
-	    SEXP *rv = (SEXP*) DATAPTR(x);
+	    SEXP *rv = (SEXP*) DATAPTR_RO(x);
 	    for (i = 0; i < n; i++)
 		setval(res, i, get_hash_obj(h, rv[i]), h->vals);
 	}
