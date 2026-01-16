@@ -7,13 +7,12 @@ Fast tapply() replacement functions
   \code{ctapply} is a fast replacement of \code{tapply} that assumes
   contiguous input, i.e. unique values in the index are never speparated
   by any other values. This avoids an expensive \code{split} step since
-  both value and the index chungs can be created on the fly. It also
-  cuts a few corners to allow very efficient copying of values. This
+  both value and the index chungs can be created on the fly. This
   makes it many orders of magnitude faster than the classical
   \code{lapply(split(), ...)} implementation.
 }
 \usage{
-ctapply(X, INDEX, FUN, ..., MERGE=c)
+ctapply(X, INDEX, FUN, ..., MERGE=c, .SAFE=TRUE)
 }
 \arguments{
   \item{X}{an atomic object, typically a vector}
@@ -22,7 +21,12 @@ ctapply(X, INDEX, FUN, ..., MERGE=c)
   \item{...}{additional arguments to \code{FUN}. They are passed as-is,
     i.e., without replication or recycling}
   \item{MERGE}{function to merge the resulting vector or \code{NULL} if
-    the arguments to such a functiona re to be returned instead}
+    the arguments to such a function are to be returned instead}
+  \item{.SAFE}{logical, if \code{TRUE} then fresh regular vectors are
+    allocated for each call of \code{FUN} which makes it safe to be
+    used with any \code{FUN}. If \code{FALSE} then both the index and
+    value vectors use cached resizable vectors, but this imposes
+    constraints on \code{FUN} (see below).}
 }
 \details{
   Note that \code{ctapply} supports either integer, real or character
@@ -35,6 +39,16 @@ ctapply(X, INDEX, FUN, ..., MERGE=c)
 
   \code{ctapply} requires the \code{INDEX} to contiguous. One (slow) way
   to achieve that is to use \code{\link{sort}} or \code{\link{order}}.
+
+  If \code{.SAFE=FALSE} then both index and value vectors will be
+  re-used in subsequent iterations and created as growable vectors,
+  thus avoiding allocations at each iteration. However, this means that
+  \code{FUN} may not directly store the value it is being passed, it can
+  only compute on it and store/return derived values (e.g., it is safe
+  to use with functions like \code{sum}). This approach can be faster
+  for large \code{X} if \code{INDEX} consists of many small groups, but
+  enable only if you have direct control over \code{FUN} and know that
+  it is safe to use this way.
 }
 %\value{
 %}

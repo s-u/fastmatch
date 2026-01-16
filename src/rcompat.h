@@ -72,8 +72,8 @@
 
 /* only exists internally, so should not be defined, but to be future-proof ....*/
 #ifndef DATAPTR_RW
-#if (R_VERSION >= R_Version(4,6,0))
-/* make sure you understand the ramifications before use in R 4.6.0+, it should only be
+#if (R_VERSION >= R_Version(4,5,0))
+/* make sure you understand the ramifications before use in R 4.5.0+, it should only be
    used from code that allocated the vector */
 #define DATAPTR_RW(X) ((void*)DATAPTR_RO(X))
 #define STRING_PTR_RW(X) ((SEXP*)STRING_PTR_RO(X))
