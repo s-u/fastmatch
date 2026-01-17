@@ -1,6 +1,7 @@
 \name{fmatch}
 \alias{fmatch}
 \alias{\%fin\%}
+\alias{\%!fin\%}
 \alias{fmatch.hash}
 \alias{fastmatch}
 \title{
@@ -24,12 +25,14 @@ used to create a table object in cases where direct modification is
 not possible.
 
 \code{\%fin\%} is a version of the built-in \code{\link{\%in\%}} function
-that uses \code{fmatch} instead of \code{\link{match}}().
+that uses \code{fmatch} instead of \code{\link{match}}() and
+\code{\%!fin\%} is the equivalent of \code{\%notin\%}.
 }
 \usage{
 fmatch(x, table, nomatch = NA_integer_, incomparables = NULL)
 fmatch.hash(x, table, nomatch = NA_integer_, incomparables = NULL)
 x \%fin\% table
+x \%!fin\% table
 }
 \arguments{
   \item{x}{values to be matched}
@@ -65,9 +68,9 @@ x \%fin\% table
   \code{fmatch.hash}: \code{table}, possibly coerced to match the type
   of \code{x}, with the hash table attached.
 
-  \code{\%fin\%}: A logical vector the same length as \code{x} - see
-  \code{\link{\%in\%}} for details.
-
+  \code{\%fin\%} and \code{\%!fin\%}: A logical vector the same length as
+  \code{x} - see \code{\link{\%in\%}} for details (\code{\%!fin\%} is
+  the negation of \code{\%fin\%}).
 }
 %\references{
 %}

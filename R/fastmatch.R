@@ -6,3 +6,6 @@ fmatch.hash <- function(x, table, nomatch = NA_integer_, incomparables = NULL)
 
 `%fin%` <- function (x, table)
   .Call(C_fmatch, x, table, 0L, NULL, FALSE) > 0L
+
+`%!fin%` <- function (x, table)
+  .Call(C_fmatch, x, table, 0L, NULL, FALSE) == 0L
