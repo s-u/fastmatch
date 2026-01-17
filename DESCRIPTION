@@ -2,9 +2,9 @@ Package: fastmatch
 Version: 1.1-7
 Title: Fast 'match()' Function
 Author: Simon Urbanek [aut, cre, cph]
-    (https://urbanek.org, <https://orcid.org/0000-0003-2297-1732>)
-Authors@R: person("Simon", "Urbanek", role=c("aut","cre","cph"), email="Simon.Urbanek@r-project.org", comment=c("https://urbanek.org", ORCID="0000-0003-2297-1732"))
-Maintainer: Simon Urbanek <simon.urbanek@r-project.org>
+    (https://urbanek.nz, <https://orcid.org/0000-0003-2297-1732>)
+Authors@R: person("Simon", "Urbanek", role=c("aut","cre","cph"), email="Simon.Urbanek@r-project.org", comment=c("https://urbanek.nz", ORCID="0000-0003-2297-1732"))
+Maintainer: Simon Urbanek <Simon.Urbanek@r-project.org>
 Description: Package providing a fast match() replacement for cases
 	that require repeated look-ups. It is slightly faster that R's
 	built-in match() function on first match against a table, but
@@ -12,4 +12,5 @@ Description: Package providing a fast match() replacement for cases
 	table in memory.
 License: GPL-2
 Depends: R (>= 2.3.0)
-URL: http://www.rforge.net/fastmatch
+URL: https://www.rforge.net/fastmatch
+BugReports: https://github.com/s-u/fastmatch/issues/
