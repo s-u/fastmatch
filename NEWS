@@ -26,6 +26,8 @@
 	then either the call cost dominates or there are not enough
 	allocations to benefit from the cache.
 
+    o	add %!fin% which is the negation of %fin%
+
 
 1.1-6	2024-12-20
     o	use C99 version of flexible arrays to avoid
