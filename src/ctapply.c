@@ -14,7 +14,7 @@
 #endif
 
 SEXP ctapply_(SEXP args) {
-    SEXP rho, vec, by, fun, mfun, sSafe, cdi = 0, cdv = 0, tmp, acc, tail;
+    SEXP rho, vec, by, fun, mfun, sSafe, cdv = 0, tmp, acc, tail;
     int i = 0, n, cdlen, safe;
     
     args = CDR(args);
@@ -52,37 +52,29 @@ SEXP ctapply_(SEXP args) {
 	/* [i0, i - 1] is the interval to run on */
 	N = i - i0;
 	if (safe) { /* no caching, always allocate fresh vectors */
-	    cdi = Rf_allocVector(TYPEOF(by), (cdlen = N));
-	    cdv = Rf_allocVector(TYPEOF(vec), N);
+	    cdv = PROTECT(Rf_allocVector(TYPEOF(vec), N));
 #ifndef FORCE_SAFE
 	} else {
 	    /* allocate cache for both the vector and index */
-	    if (!cdi) /* in theory we should duplicate also: || MAYBE_SHARED(cdv)) */ {
+	    if (!cdv) /* in theory we should duplicate also: || MAYBE_SHARED(cdv)) */ {
 		/* NB: SET_VECTOR_ELT guarantees NAMED=1 so no need to tweak it */
-		cdi = SET_VECTOR_ELT(tmp, 0, R_allocResizableVector(TYPEOF(by), (cdlen = ((N < MIN_CACHE) ? MIN_CACHE : N))));
-		cdv = SET_VECTOR_ELT(tmp, 1, R_allocResizableVector(TYPEOF(vec), cdlen));
+		cdv = SET_VECTOR_ELT(tmp, 0, R_allocResizableVector(TYPEOF(vec), (cdlen = ((N < MIN_CACHE) ? MIN_CACHE : N))));
 	    } else if (cdlen < N) {
-		cdi = SET_VECTOR_ELT(tmp, 0, R_allocResizableVector(TYPEOF(by), (cdlen = N)));
-		cdv = SET_VECTOR_ELT(tmp, 1, R_allocResizableVector(TYPEOF(vec), cdlen));
+		cdv = SET_VECTOR_ELT(tmp, 0, R_allocResizableVector(TYPEOF(vec), (cdlen = N)));
 	    }
 	    if (N != cdlen) {
-		R_resizeVector(cdi, N);
 		R_resizeVector(cdv, N);
 	    }
 #endif
 	}
-	/* Rprintf("%d-%d) maybe shared: index=%d, val=%d\n", (int)i0, (int)i, MAYBE_SHARED(cdi), MAYBE_SHARED(cdv)); */
-	/* copy the index slice */
-	if (TYPEOF(by) == INTSXP) memcpy(INTEGER(cdi), INTEGER(by) + i0, sizeof(int) * N);
-	else if (TYPEOF(by) == REALSXP) memcpy(REAL(cdi), REAL(by) + i0, sizeof(double) * N);
-	else if (TYPEOF(by) == STRSXP) memcpy(STRING_PTR_RW(cdi), STRING_PTR_RO(by) + i0, sizeof(SEXP) * N);
+	/* Rprintf("%d-%d) maybe shared: val=%d\n", (int)i0, (int)i, MAYBE_SHARED(cdv)); */
 	/* copy the vector slice */
 	if (TYPEOF(vec) == INTSXP) memcpy(INTEGER(cdv), INTEGER(vec) + i0, sizeof(int) * N);
 	else if (TYPEOF(vec) == REALSXP) memcpy(REAL(cdv), REAL(vec) + i0, sizeof(double) * N);
 	else if (TYPEOF(vec) == STRSXP) memcpy(STRING_PTR_RW(cdv), STRING_PTR_RO(vec) + i0, sizeof(SEXP) * N);
 	else if (TYPEOF(vec) == VECSXP) memcpy(VECTOR_PTR_RW(cdv), VECTOR_PTR_RO(vec) + i0, sizeof(SEXP) * N);
 	eres = eval(PROTECT(LCONS(fun, CONS(cdv, args))), rho);
-	UNPROTECT(1); /* eval arg */
+	UNPROTECT(safe ? 2 : 1); /* eval arg and cdv in safe mode */
 	/* if the result has NAMED > 1 then we have to duplicate it
 	   see ctapply(x, y, identity). It should be uncommon, though
 	   since most functions will return newly allocated objects
