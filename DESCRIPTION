@@ -14,3 +14,4 @@ License: GPL-2
 Depends: R (>= 2.3.0)
 URL: https://www.rforge.net/fastmatch
 BugReports: https://github.com/s-u/fastmatch/issues/
+SystemRequirements: C99, GNU Atomic Library (libatomic)
