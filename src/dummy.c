@@ -2,10 +2,10 @@
    (this package uses NAMESPACE C-level symbol registration
    but the checks don't get that) */
 
-extern void R_registerRoutines(void);
-extern void R_useDynamicSymbols(void);
+#include <stddef.h>
+#include <R_ext/Rdynload.h>
 
 void dummy(void) {
-    R_registerRoutines();
-    R_useDynamicSymbols();
+    R_registerRoutines(NULL, NULL, NULL, NULL, NULL);
+    R_useDynamicSymbols(NULL, FALSE);
 }
